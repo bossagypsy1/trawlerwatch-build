@@ -1,0 +1,111 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background-color: #020b18;
+  color: #e2eaf2;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Leaflet overrides ─────────────────────────────────────────────────────── */
+.leaflet-container {
+  background: #f0eeeb !important;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.leaflet-attribution-flag { display: none !important; }
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #666 !important;
+  font-size: 9px !important;
+  border-top-left-radius: 4px;
+}
+
+.leaflet-control-attribution a { color: #2563eb !important; }
+
+.leaflet-control-zoom {
+  border: 1px solid rgba(42, 90, 120, 0.4) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  background: rgba(7, 26, 48, 0.95) !important;
+  color: #7ab5d8 !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(42, 90, 120, 0.4) !important;
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  font-size: 16px !important;
+  transition: background 0.15s, color 0.15s;
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+  background: rgba(13, 48, 85, 0.95) !important;
+  color: #00c8ff !important;
+}
+
+.leaflet-control-zoom-out { border-bottom: none !important; }
+
+/* ── Custom scrollbars ─────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(42, 90, 120, 0.5);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(74, 144, 196, 0.7); }
+
+/* ── Range inputs ──────────────────────────────────────────────────────────── */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(42, 90, 120, 0.4);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00c8ff;
+  cursor: pointer;
+  border: 2px solid rgba(2, 11, 24, 0.8);
+  box-shadow: 0 0 4px rgba(0, 200, 255, 0.4);
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00c8ff;
+  cursor: pointer;
+  border: 2px solid rgba(2, 11, 24, 0.8);
+}
+
+/* ── Select options ────────────────────────────────────────────────────────── */
+select option {
+  background: #071a30;
+  color: #e2eaf2;
+}
