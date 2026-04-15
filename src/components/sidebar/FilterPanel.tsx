@@ -1,7 +1,6 @@
 "use client";
 
 import { FilterState, NavStatus, DEFAULT_FILTERS } from "@/types";
-import { UNIQUE_FLAGS } from "@/lib/data/mockData";
 import { Search, RotateCcw, SlidersHorizontal } from "lucide-react";
 
 interface Props {
@@ -163,16 +162,7 @@ export default function FilterPanel({
           </div>
         </div>
 
-        {/* Flag */}
-        <div>
-          <Label>Flag State</Label>
-          <Select value={filters.flag} onChange={(v) => set("flag", v)}>
-            <option value="">All flags</option>
-            {UNIQUE_FLAGS.map((flag) => (
-              <option key={flag} value={flag}>{flag}</option>
-            ))}
-          </Select>
-        </div>
+        {/* Flag — not available from raw AIS position reports */}
 
         {/* Nav status */}
         <div>

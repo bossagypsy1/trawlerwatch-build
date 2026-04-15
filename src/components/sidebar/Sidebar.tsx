@@ -14,6 +14,7 @@ interface Props {
   onFiltersChange: (f: FilterState) => void;
   selectedVessel:  VesselWithPosition | null;
   onVesselSelect:  (vessel: VesselWithPosition | null) => void;
+  connected:       boolean;
   loading:         boolean;
 }
 
@@ -26,6 +27,7 @@ export default function Sidebar({
   onFiltersChange,
   selectedVessel,
   onVesselSelect,
+  connected,
   loading,
 }: Props) {
   const [tab,       setTab]       = useState<Tab>("vessels");
@@ -69,8 +71,10 @@ export default function Sidebar({
             </span>
           </div>
           <div className="ml-auto flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-signal-green animate-pulse" />
-            <span className="text-[10px] text-ocean-400 font-mono uppercase tracking-wider">Live</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-signal-green animate-pulse" : "bg-signal-red"}`} />
+            <span className="text-[10px] text-ocean-400 font-mono uppercase tracking-wider">
+              {connected ? "Live" : "Reconnecting…"}
+            </span>
           </div>
         </div>
 
