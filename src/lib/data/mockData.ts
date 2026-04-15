@@ -617,5 +617,3 @@ export const MOCK_VESSELS: VesselWithPosition[] = RAW.map((v) => ({
     v.latest_position.speed_over_ground,
   ).map((p) => ({ ...p, vessel_id: v.id, mmsi: v.mmsi })),
 }));
-
-export const UNIQUE_FLAGS = [...new Set(MOCK_VESSELS.map((v) => v.flag))].sort();
