@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { VesselWithPosition, NavStatus, Position } from "@/types";
 
-const STATUS_URL =
-  (process.env.NEXT_PUBLIC_AIS_URL ?? "http://localhost:5000") + "/status";
+const STATUS_URL = "/api/ais-status";
 const POLL_INTERVAL_MS = 2_000;
 const MAX_TRAIL        = 20;
 

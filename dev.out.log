@@ -1,5 +1,31 @@
+  ▲ Next.js 14.2.3
+  - Local:        http://localhost:3030
+  - Environments: .env.local
 
-> trawlerwatch@0.1.0 dev
-> next dev -p 3030
-
-[?25h
+ ✓ Starting...
+ ✓ Ready in 3.6s
+ ○ Compiling / ...
+ ✓ Compiled / in 8.2s (689 modules)
+ GET / 200 in 364ms
+   Reload env: .env.local
+ ✓ Compiled in 413ms (356 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 704ms (333 modules)
+ GET / 200 in 1132ms
+ ○ Compiling /api/ais-status ...
+ ✓ Compiled /api/ais-status in 1974ms (363 modules)
+ GET /api/ais-status 200 in 2504ms
+ GET /api/ais-status 200 in 239ms
+ GET /api/ais-status 200 in 32ms
+ GET /api/ais-status 200 in 22ms
+ GET /api/ais-status 200 in 50ms
+ GET /api/ais-status 200 in 22ms
+ GET /api/ais-status 200 in 23ms
+ GET /api/ais-status 200 in 27ms
+ GET /api/ais-status 200 in 34ms
+ GET /api/ais-status 200 in 22ms
+ GET /api/ais-status 200 in 15ms
+ GET /api/ais-status 200 in 34ms
+ GET /api/ais-status 200 in 21ms
+ GET /api/ais-status 200 in 16ms
+ GET /api/ais-status 200 in 30ms
