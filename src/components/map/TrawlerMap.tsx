@@ -108,7 +108,7 @@ export default function TrawlerMap({
         })
         .addTo(map);
 
-      leaflet.control.zoom({ position: "bottomright" }).addTo(map);
+      leaflet.control.zoom({ position: "bottomleft" }).addTo(map);
 
       leafletRef.current = leaflet;
       mapRef.current     = map;

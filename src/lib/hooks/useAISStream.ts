@@ -21,6 +21,14 @@ interface AISUpdate {
   heading:     number | null;
   navStatus:   string | null;
   timestamp:   string;
+  // From ShipStaticData
+  callsign:    string | null;
+  imo:         string | null;
+  vesselType:  string | null;
+  lengthM:     number | null;
+  widthM:      number | null;
+  draught:     number | null;
+  destination: string | null;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -72,11 +80,30 @@ function makePosition(u: AISUpdate): Position {
 }
 
 function upsert(map: Map<string, VesselWithPosition>, u: AISUpdate): void {
-  if (u.latitude == null || u.longitude == null) return;
+  const prev = map.get(u.mmsi);
 
-  const prev   = map.get(u.mmsi);
+  // ShipStaticData has no position — merge metadata into existing vessel only
+  if (u.latitude == null || u.longitude == null) {
+    if (prev) {
+      map.set(u.mmsi, {
+        ...prev,
+        name:        (u.shipName && u.shipName !== "—") ? u.shipName : prev.name,
+        vessel_type: u.vesselType ?? prev.vessel_type,
+        callsign:    u.callsign   ?? prev.callsign,
+        imo:         u.imo        ?? prev.imo,
+        length_m:    u.lengthM    ?? prev.length_m,
+        width_m:     u.widthM     ?? prev.width_m,
+        latest_position: {
+          ...prev.latest_position,
+          destination: u.destination ?? prev.latest_position.destination,
+          draught:     u.draught     ?? prev.latest_position.draught,
+        },
+      });
+    }
+    return;
+  }
+
   const newPos = makePosition(u);
-
   const trail: Position[] = prev
     ? [prev.latest_position, ...(prev.trail ?? [])].slice(0, MAX_TRAIL)
     : [];
@@ -87,14 +114,18 @@ function upsert(map: Map<string, VesselWithPosition>, u: AISUpdate): void {
     name:          (u.shipName && u.shipName !== "—") ? u.shipName : (prev?.name ?? "—"),
     flag:          prev?.flag          ?? "",
     flag_code:     prev?.flag_code     ?? "",
-    vessel_type:   prev?.vessel_type   ?? "AIS Vessel",
-    callsign:      prev?.callsign      ?? null,
-    imo:           prev?.imo           ?? null,
-    length_m:      prev?.length_m      ?? null,
-    width_m:       prev?.width_m       ?? null,
+    vessel_type:   u.vesselType  ?? prev?.vessel_type   ?? null,
+    callsign:      u.callsign    ?? prev?.callsign      ?? null,
+    imo:           u.imo         ?? prev?.imo            ?? null,
+    length_m:      u.lengthM     ?? prev?.length_m      ?? null,
+    width_m:       u.widthM      ?? prev?.width_m       ?? null,
     gross_tonnage: prev?.gross_tonnage ?? null,
     created_at:    prev?.created_at    ?? new Date().toISOString(),
-    latest_position: newPos,
+    latest_position: {
+      ...newPos,
+      destination: u.destination ?? prev?.latest_position.destination ?? null,
+      draught:     u.draught     ?? prev?.latest_position.draught     ?? null,
+    },
     trail,
   });
 }

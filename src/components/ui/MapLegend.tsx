@@ -17,7 +17,7 @@ export default function MapLegend() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="absolute bottom-12 left-3 z-10">
+    <div className="absolute bottom-8 left-14 z-10">
 
       {/* Popup — bottom-full positions it above the button */}
       {open && (

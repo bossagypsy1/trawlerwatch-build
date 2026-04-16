@@ -29,9 +29,9 @@ function Row({
 }) {
   return (
     <div className="flex justify-between items-start gap-2 py-1.5 border-b border-ocean-700/40 last:border-0">
-      <span className="text-xs text-ocean-300 shrink-0">{label}</span>
+      <span className="text-xs text-ocean-400 shrink-0">{label}</span>
       <span
-        className={`text-xs text-right ${mono ? "font-mono" : ""} text-white/90 max-w-[60%] break-all`}
+        className={`text-xs text-right ${mono ? "font-mono" : ""} text-black font-medium max-w-[60%] break-all`}
       >
         {value}
       </span>
@@ -65,8 +65,17 @@ export default function VesselDetail({ vessel, onClose }: Props) {
                 {statusLabel}
               </span>
             </div>
-            <h2 className="text-base font-bold text-white font-display leading-tight">
-              {vessel.name}
+            <h2 className="text-base font-bold font-display leading-tight">
+              <button
+                onClick={() => window.open(
+                  `https://www.google.com/search?q=${encodeURIComponent(vessel.name + ' ' + vessel.mmsi + ' vessel')}`,
+                  '_blank'
+                )}
+                className="text-signal-blue hover:underline hover:text-signal-blue/80 transition-colors text-left"
+                title="Search for this vessel"
+              >
+                {vessel.name}
+              </button>
             </h2>
             <p className="text-xs text-ocean-300 font-mono mt-0.5">MMSI: {vessel.mmsi}</p>
           </div>
@@ -80,7 +89,7 @@ export default function VesselDetail({ vessel, onClose }: Props) {
       </div>
 
       {/* ── Scrollable content ─────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0 bg-white/95">
 
         {/* SOG / Compass point / Mini compass */}
         <div className="grid grid-cols-3 gap-2">
@@ -146,16 +155,11 @@ export default function VesselDetail({ vessel, onClose }: Props) {
             <Ship size={10} /> Vessel
           </div>
           <div className="space-y-0">
-            <Row label="Type"     value={vessel.vessel_type} />
-            <Row label="Flag"     value={`${flagEmoji(vessel.flag_code)} ${vessel.flag}`} />
-            <Row label="Callsign" value={vessel.callsign ?? "—"} mono />
-            {vessel.imo && <Row label="IMO" value={vessel.imo} mono />}
-            {vessel.length_m != null && (
-              <Row label="Dimensions" value={`${vessel.length_m}m × ${vessel.width_m}m`} mono />
-            )}
-            {vessel.gross_tonnage != null && (
-              <Row label="Gross Tonnage" value={`${vessel.gross_tonnage} GT`} mono />
-            )}
+            <Row label="Vessel Type" value={vessel.vessel_type ?? "—"} mono />
+            <Row label="Callsign"   value={vessel.callsign    ?? "—"} mono />
+            <Row label="IMO"        value={vessel.imo         ?? "—"} mono />
+            <Row label="Length"     value={vessel.length_m    != null ? `${vessel.length_m} m` : "—"} mono />
+            <Row label="Width"      value={vessel.width_m     != null ? `${vessel.width_m} m`  : "—"} mono />
           </div>
         </div>
 
@@ -175,13 +179,9 @@ export default function VesselDetail({ vessel, onClose }: Props) {
               mono
             />
             <Row label="Heading" value={formatHeading(pos.heading)} mono />
-            <Row label="Speed"   value={formatSpeed(pos.speed_over_ground)} mono />
-            {pos.draught != null && (
-              <Row label="Draught" value={`${pos.draught}m`} mono />
-            )}
-            {pos.destination && (
-              <Row label="Destination" value={pos.destination} />
-            )}
+            <Row label="Speed"       value={formatSpeed(pos.speed_over_ground)} mono />
+            <Row label="Draught"     value={pos.draught     != null ? `${pos.draught} m` : "—"} mono />
+            <Row label="Destination" value={pos.destination ?? "—"} />
           </div>
         </div>
 

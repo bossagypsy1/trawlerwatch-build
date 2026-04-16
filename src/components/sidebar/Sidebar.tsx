@@ -159,7 +159,7 @@ export default function Sidebar({
         {/* Footer */}
         <div className="px-4 py-2 border-t border-ocean-700/50 bg-ocean-950/40 flex items-center justify-between shrink-0">
           <span className="text-[9px] text-ocean-600 font-mono uppercase tracking-wider">
-            Sample AIS · UK waters
+            Live AIS · UK waters
           </span>
           <span className="text-[9px] text-ocean-600 font-mono">
             {utcTime} UTC
