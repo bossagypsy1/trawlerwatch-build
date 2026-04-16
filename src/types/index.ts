@@ -7,7 +7,7 @@ export interface Vessel {
   callsign?: string | null;
   flag: string;
   flag_code: string;
-  vessel_type: string;
+  vessel_type: string | null;
   length_m?: number | null;
   width_m?: number | null;
   gross_tonnage?: number | null;
