@@ -103,9 +103,14 @@ function upsert(map: Map<string, VesselWithPosition>, u: AISUpdate): void {
   }
 
   const newPos = makePosition(u);
-  const trail: Position[] = prev
+  // Only extend trail if the vessel has actually moved (avoids duplicate entries
+  // now that /status returns one merged record per MMSI on every poll)
+  const positionChanged = !prev
+    || prev.latest_position.latitude  !== newPos.latitude
+    || prev.latest_position.longitude !== newPos.longitude;
+  const trail: Position[] = (prev && positionChanged)
     ? [prev.latest_position, ...(prev.trail ?? [])].slice(0, MAX_TRAIL)
-    : [];
+    : (prev?.trail ?? []);
 
   map.set(u.mmsi, {
     id:            u.mmsi,

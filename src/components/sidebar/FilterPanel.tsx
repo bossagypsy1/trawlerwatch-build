@@ -1,6 +1,7 @@
 "use client";
 
 import { FilterState, NavStatus, DEFAULT_FILTERS } from "@/types";
+import { VESSEL_TYPE_GROUP_LABEL, LEGEND_GROUPS } from "@/lib/vesselTypes";
 import { Search, RotateCcw, SlidersHorizontal } from "lucide-react";
 
 interface Props {
@@ -105,6 +106,7 @@ export default function FilterPanel({
     filters.speedMin        !== DEFAULT_FILTERS.speedMin        ||
     filters.speedMax        !== DEFAULT_FILTERS.speedMax        ||
     filters.navStatus       !== DEFAULT_FILTERS.navStatus       ||
+    filters.vesselType      !== DEFAULT_FILTERS.vesselType      ||
     filters.lastUpdateHours !== DEFAULT_FILTERS.lastUpdateHours ||
     filters.activeOnly      !== DEFAULT_FILTERS.activeOnly;
 
@@ -173,6 +175,22 @@ export default function FilterPanel({
           >
             {NAV_STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </Select>
+        </div>
+
+        {/* Vessel type */}
+        <div>
+          <Label>Vessel Type</Label>
+          <Select
+            value={filters.vesselType}
+            onChange={(v) => set("vesselType", v)}
+          >
+            <option value="">All types</option>
+            {LEGEND_GROUPS.map((group) => (
+              <option key={group} value={group}>
+                {VESSEL_TYPE_GROUP_LABEL[group]}
+              </option>
             ))}
           </Select>
         </div>

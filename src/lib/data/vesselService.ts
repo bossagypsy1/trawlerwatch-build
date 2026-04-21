@@ -10,6 +10,7 @@
  */
 
 import { VesselWithPosition, FilterState } from "@/types";
+import { vesselTypeGroup } from "@/lib/vesselTypes";
 import { MOCK_VESSELS } from "./mockData";
 
 const USE_LIVE = process.env.NEXT_PUBLIC_USE_LIVE_DATA === "true";
@@ -94,6 +95,8 @@ export function filterVessels(
     if (spd < filters.speedMin || spd > filters.speedMax) return false;
 
     if (filters.navStatus && pos.nav_status !== filters.navStatus) return false;
+
+    if (filters.vesselType && vesselTypeGroup(v.vessel_type) !== filters.vesselType) return false;
 
     if (Date.now() - new Date(pos.timestamp).getTime() > cutoffMs) return false;
 

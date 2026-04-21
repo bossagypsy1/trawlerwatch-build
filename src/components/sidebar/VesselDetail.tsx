@@ -11,6 +11,7 @@ import {
   formatHeading,
   compassPoint,
 } from "@/lib/utils";
+import { vesselTypeLabel, vesselTypeColor, VESSEL_TYPE_GROUP_LABEL, vesselTypeGroup } from "@/lib/vesselTypes";
 import { X, Navigation, Ship, Clock, MapPin } from "lucide-react";
 
 interface Props {
@@ -155,7 +156,16 @@ export default function VesselDetail({ vessel, onClose }: Props) {
             <Ship size={10} /> Vessel
           </div>
           <div className="space-y-0">
-            <Row label="Vessel Type" value={vessel.vessel_type ?? "—"} mono />
+            <Row
+              label="Vessel Type"
+              value={
+                vessel.vessel_type ? (
+                  <span style={{ color: vesselTypeColor(vessel.vessel_type) }}>
+                    {vesselTypeLabel(vessel.vessel_type)}
+                  </span>
+                ) : "—"
+              }
+            />
             <Row label="Callsign"   value={vessel.callsign    ?? "—"} mono />
             <Row label="IMO"        value={vessel.imo         ?? "—"} mono />
             <Row label="Length"     value={vessel.length_m    != null ? `${vessel.length_m} m` : "—"} mono />

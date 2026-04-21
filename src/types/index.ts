@@ -69,6 +69,7 @@ export interface FilterState {
   speedMin: number;
   speedMax: number;
   navStatus: NavStatus | "";
+  vesselType: string;          // VesselTypeGroup key, or "" for all
   lastUpdateHours: number;
   showTrails: boolean;
   activeOnly: boolean;
@@ -80,6 +81,7 @@ export const DEFAULT_FILTERS: FilterState = {
   speedMin: 0,
   speedMax: 20,
   navStatus: "",
+  vesselType: "",
   lastUpdateHours: 24,
   showTrails: true,
   activeOnly: false,

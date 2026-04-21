@@ -1,17 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { NavStatus } from "@/types";
-import { NAV_STATUS_COLOR, NAV_STATUS_LABEL } from "@/lib/utils";
+import {
+  LEGEND_GROUPS,
+  VESSEL_TYPE_GROUP_COLOR,
+  VESSEL_TYPE_GROUP_LABEL,
+} from "@/lib/vesselTypes";
 import { Info, ChevronDown, ChevronUp } from "lucide-react";
-
-const LEGEND_ITEMS: NavStatus[] = [
-  "fishing",
-  "underway_engine",
-  "at_anchor",
-  "moored",
-  "not_under_command",
-];
 
 export default function MapLegend() {
   const [open, setOpen] = useState(false);
@@ -19,25 +14,24 @@ export default function MapLegend() {
   return (
     <div className="absolute bottom-8 left-14 z-10">
 
-      {/* Popup — bottom-full positions it above the button */}
       {open && (
         <div
           className="absolute bottom-full mb-2 left-0
             bg-ocean-900/95 backdrop-blur-sm border border-ocean-700/50
-            rounded-lg p-3 shadow-2xl min-w-[164px]"
+            rounded-lg p-3 shadow-2xl min-w-[180px]"
         >
           <div className="text-[9px] uppercase tracking-widest text-ocean-500 mb-2">
-            Nav Status
+            Vessel Type
           </div>
           <div className="space-y-1.5">
-            {LEGEND_ITEMS.map((status) => (
-              <div key={status} className="flex items-center gap-2">
+            {LEGEND_GROUPS.map((group) => (
+              <div key={group} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: NAV_STATUS_COLOR[status] }}
+                  style={{ backgroundColor: VESSEL_TYPE_GROUP_COLOR[group] }}
                 />
                 <span className="text-[10px] text-ocean-300">
-                  {NAV_STATUS_LABEL[status]}
+                  {VESSEL_TYPE_GROUP_LABEL[group]}
                 </span>
               </div>
             ))}
@@ -48,7 +42,6 @@ export default function MapLegend() {
         </div>
       )}
 
-      {/* Toggle button */}
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex items-center gap-1.5 bg-ocean-900/90 backdrop-blur-sm

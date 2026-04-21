@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, DivIcon, Marker, Polyline } from "leaflet";
 import { VesselWithPosition, FilterState } from "@/types";
 import { NAV_STATUS_COLOR } from "@/lib/utils";
+import { vesselTypeColor } from "@/lib/vesselTypes";
 
 interface MapProps {
   vessels:        VesselWithPosition[];
@@ -20,7 +21,7 @@ function buildVesselIcon(
   isSelected: boolean,
 ): DivIcon {
   const pos      = vessel.latest_position;
-  const color    = NAV_STATUS_COLOR[pos.nav_status] ?? "#888888";
+  const color    = vesselTypeColor(vessel.vessel_type);
   const heading  = pos.heading === 511 ? pos.course_over_ground : pos.heading;
   const size     = isSelected ? 20 : 14;
   const hw       = size + 8; // icon canvas width/height
@@ -172,8 +173,8 @@ export default function TrawlerMap({
 
     if (!filters.showTrails || !selectedVessel?.trail?.length) return;
 
+    const color = vesselTypeColor(selectedVessel.vessel_type);
     const pos   = selectedVessel.latest_position;
-    const color = NAV_STATUS_COLOR[pos.nav_status] ?? "#00c8ff";
 
     // Build coords oldest → newest; trail array is stored newest-first
     const coords: [number, number][] = [
