@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import { VesselWithPosition, FilterState, DEFAULT_FILTERS } from "@/types";
 import { filterVessels } from "@/lib/data/vesselService";
 import { useAISStream } from "@/lib/hooks/useAISStream";
-import Sidebar   from "@/components/sidebar/Sidebar";
-import StatsBar  from "@/components/ui/StatsBar";
-import MapLegend from "@/components/ui/MapLegend";
+import Sidebar      from "@/components/sidebar/Sidebar";
+import StatsBar     from "@/components/ui/StatsBar";
+import MapLegend    from "@/components/ui/MapLegend";
+import MapControls  from "@/components/ui/MapControls";
 
 // Leaflet must be loaded client-side only
 const TrawlerMap = dynamic(() => import("@/components/map/TrawlerMap"), {
@@ -33,6 +34,8 @@ export default function HomePage() {
 
   const [selectedVessel, setSelectedVessel] = useState<VesselWithPosition | null>(null);
   const [filters,        setFilters]        = useState<FilterState>(DEFAULT_FILTERS);
+  const [mapTheme,       setMapTheme]       = useState<"light" | "dark">("light");
+  const [showEEZ,        setShowEEZ]        = useState(false);
 
   const filteredVessels = useMemo(
     () => filterVessels(allVessels, filters),
@@ -54,6 +57,8 @@ export default function HomePage() {
           selectedVessel={selectedVessel}
           onVesselSelect={handleVesselSelect}
           filters={filters}
+          mapTheme={mapTheme}
+          showEEZ={showEEZ}
         />
       </div>
 
@@ -64,6 +69,14 @@ export default function HomePage() {
 
       {/* Bottom-left legend */}
       <MapLegend />
+
+      {/* Bottom-right map controls */}
+      <MapControls
+        mapTheme={mapTheme}
+        onToggleTheme={() => setMapTheme((t) => t === "light" ? "dark" : "light")}
+        showEEZ={showEEZ}
+        onToggleEEZ={() => setShowEEZ((v) => !v)}
+      />
 
       {/* Initial loading overlay */}
       {loading && (

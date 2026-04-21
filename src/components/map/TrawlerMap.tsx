@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Map as LeafletMap, DivIcon, Marker, Polyline } from "leaflet";
+import type { Map as LeafletMap, DivIcon, Marker, Polyline, TileLayer } from "leaflet";
 import { VesselWithPosition, FilterState } from "@/types";
-import { NAV_STATUS_COLOR } from "@/lib/utils";
 import { vesselTypeColor } from "@/lib/vesselTypes";
 
 interface MapProps {
@@ -11,9 +10,13 @@ interface MapProps {
   selectedVessel: VesselWithPosition | null;
   onVesselSelect: (vessel: VesselWithPosition) => void;
   filters:        FilterState;
+  mapTheme:       "light" | "dark";
+  showEEZ:        boolean;
 }
 
 type LeafletLib = typeof import("leaflet");
+
+// ── Vessel icon ───────────────────────────────────────────────────────────────
 
 function buildVesselIcon(
   leaflet:    LeafletLib,
@@ -24,7 +27,7 @@ function buildVesselIcon(
   const color    = vesselTypeColor(vessel.vessel_type);
   const heading  = pos.heading === 511 ? pos.course_over_ground : pos.heading;
   const size     = isSelected ? 20 : 14;
-  const hw       = size + 8; // icon canvas width/height
+  const hw       = size + 8;
   const isMoving = pos.speed_over_ground > 0.5;
 
   const svg = [
@@ -32,7 +35,7 @@ function buildVesselIcon(
     `<g transform="translate(${hw / 2},${hw / 2}) rotate(${heading})">`,
     `<path d="M 0,${-(size / 2)} L ${size / 3},${size / 2} L 0,${size / 3} L ${-(size / 3)},${size / 2} Z"`,
     ` fill="${color}"`,
-    ` stroke="${isSelected ? "#ffffff" : "rgba(0,0,0,0.5)"}"`,
+    ` stroke="${isSelected ? "#ffffff" : "rgba(0,0,0,0.4)"}"`,
     ` stroke-width="${isSelected ? 2 : 1}"`,
     ` opacity="${isMoving ? 1 : 0.65}"/>`,
     isSelected
@@ -49,30 +52,35 @@ function buildVesselIcon(
   });
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function TrawlerMap({
   vessels,
   selectedVessel,
   onVesselSelect,
   filters,
+  mapTheme,
+  showEEZ,
 }: MapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef       = useRef<LeafletMap | null>(null);
-  const leafletRef   = useRef<LeafletLib | null>(null);
-  const markersRef   = useRef<Map<string, Marker>>(new Map());
-  const trailsRef    = useRef<Map<string, Polyline>>(new Map());
+  const containerRef  = useRef<HTMLDivElement>(null);
+  const mapRef        = useRef<LeafletMap | null>(null);
+  const leafletRef    = useRef<LeafletLib | null>(null);
+  const markersRef    = useRef<Map<string, Marker>>(new Map());
+  const trailsRef     = useRef<Map<string, Polyline>>(new Map());
+  const baseTileRef   = useRef<TileLayer | null>(null);
+  const labelTileRef  = useRef<TileLayer | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eezLayerRef   = useRef<any>(null);
 
-  // leafletReady flips to true once the async import + map init completes,
-  // which causes the marker and trail effects to run with a valid L reference.
   const [leafletReady, setLeafletReady] = useState(false);
 
-  // ── Initialise Leaflet map once ───────────────────────────────────────────
+  // ── 1. Initialise Leaflet map (no tile layers here) ───────────────────────
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
 
     import("leaflet").then((leaflet) => {
-      if (mapRef.current) return; // StrictMode double-fire guard
+      if (mapRef.current) return;
 
-      // Silence missing-icon warning from Next.js static file handling
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
       leaflet.Icon.Default.mergeOptions({
@@ -82,38 +90,17 @@ export default function TrawlerMap({
       });
 
       const map = leaflet.map(containerRef.current!, {
-        center:             [56.5, -3.5], // centred on UK
+        center:             [56.5, -3.5],
         zoom:               6,
         zoomControl:        false,
         attributionControl: true,
       });
 
-      // Light basemap (no labels)
-      leaflet
-        .tileLayer("https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png", {
-          attribution:
-            '&copy; <a href="https://carto.com/">CARTO</a> ' +
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
-          subdomains: "abcd",
-          maxZoom:    19,
-        })
-        .addTo(map);
-
-      // Place-name label overlay
-      leaflet
-        .tileLayer("https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png", {
-          attribution: "",
-          subdomains:  "abcd",
-          maxZoom:     19,
-          pane:        "overlayPane",
-        })
-        .addTo(map);
-
       leaflet.control.zoom({ position: "bottomleft" }).addTo(map);
 
       leafletRef.current = leaflet;
       mapRef.current     = map;
-      setLeafletReady(true); // triggers marker + trail effects
+      setLeafletReady(true);
     });
 
     return () => {
@@ -125,13 +112,72 @@ export default function TrawlerMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Draw / update vessel markers ──────────────────────────────────────────
+  // ── 2. Swap base tile layers when theme changes ───────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
     if (!map || !leaflet || !leafletReady) return;
 
-    // Remove markers for vessels no longer in the filtered list
+    // Remove current tiles
+    baseTileRef.current?.remove();
+    labelTileRef.current?.remove();
+
+    const t = mapTheme; // "light" | "dark"
+
+    baseTileRef.current = leaflet
+      .tileLayer(`https://{s}.basemaps.cartocdn.com/${t}_nolabels/{z}/{x}/{y}{r}.png`, {
+        attribution:
+          '&copy; <a href="https://carto.com/">CARTO</a> ' +
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+        subdomains: "abcd",
+        maxZoom:    19,
+      })
+      .addTo(map);
+
+    labelTileRef.current = leaflet
+      .tileLayer(`https://{s}.basemaps.cartocdn.com/${t}_only_labels/{z}/{x}/{y}{r}.png`, {
+        attribution: "",
+        subdomains:  "abcd",
+        maxZoom:     19,
+        pane:        "overlayPane",
+      })
+      .addTo(map);
+  }, [leafletReady, mapTheme]);
+
+  // ── 3. Toggle EEZ / international waters WMS overlay ─────────────────────
+  useEffect(() => {
+    const map     = mapRef.current;
+    const leaflet = leafletRef.current;
+    if (!map || !leaflet || !leafletReady) return;
+
+    if (eezLayerRef.current) {
+      eezLayerRef.current.remove();
+      eezLayerRef.current = null;
+    }
+
+    if (showEEZ) {
+      // Marine Regions (VLIZ) public WMS — World EEZ v11 boundary layer
+      // https://www.vliz.be/en/imis?module=dataset&dasid=1600
+      eezLayerRef.current = (leaflet.tileLayer as any).wms(
+        "https://geo.vliz.be/geoserver/MarineRegions/wms",
+        {
+          layers:      "eez_boundaries",
+          format:      "image/png",
+          transparent: true,
+          opacity:     0.7,
+          version:     "1.1.1",
+          // Blue dashed boundary lines on a transparent background
+        },
+      ).addTo(map);
+    }
+  }, [leafletReady, showEEZ]);
+
+  // ── 4. Draw / update vessel markers ──────────────────────────────────────
+  useEffect(() => {
+    const map     = mapRef.current;
+    const leaflet = leafletRef.current;
+    if (!map || !leaflet || !leafletReady) return;
+
     const visibleIds = new Set(vessels.map((v) => v.id));
     markersRef.current.forEach((marker, id) => {
       if (!visibleIds.has(id)) {
@@ -140,7 +186,6 @@ export default function TrawlerMap({
       }
     });
 
-    // Upsert every visible vessel
     vessels.forEach((vessel) => {
       const pos        = vessel.latest_position;
       const isSelected = selectedVessel?.id === vessel.id;
@@ -161,13 +206,12 @@ export default function TrawlerMap({
     });
   }, [leafletReady, vessels, selectedVessel, onVesselSelect]);
 
-  // ── Draw / update vessel trail ────────────────────────────────────────────
+  // ── 5. Draw / update vessel trail ────────────────────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
     if (!map || !leaflet || !leafletReady) return;
 
-    // Clear previous trail segments
     trailsRef.current.forEach((line) => line.remove());
     trailsRef.current.clear();
 
@@ -176,7 +220,6 @@ export default function TrawlerMap({
     const color = vesselTypeColor(selectedVessel.vessel_type);
     const pos   = selectedVessel.latest_position;
 
-    // Build coords oldest → newest; trail array is stored newest-first
     const coords: [number, number][] = [
       ...[...selectedVessel.trail]
         .reverse()
@@ -184,7 +227,6 @@ export default function TrawlerMap({
       [pos.latitude, pos.longitude],
     ];
 
-    // Render segments with increasing opacity toward current position
     coords.forEach((coord, i) => {
       if (i === 0) return;
       const frac = i / (coords.length - 1);
@@ -200,7 +242,7 @@ export default function TrawlerMap({
     });
   }, [leafletReady, selectedVessel, filters.showTrails]);
 
-  // ── Fly to selected vessel ────────────────────────────────────────────────
+  // ── 6. Fly to selected vessel ─────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !selectedVessel) return;
     const { latitude, longitude } = selectedVessel.latest_position;
@@ -211,5 +253,8 @@ export default function TrawlerMap({
     );
   }, [selectedVessel]);
 
-  return <div ref={containerRef} className="w-full h-full" />;
+  // Container background matches the theme immediately (before tiles load)
+  const bg = mapTheme === "dark" ? "#020b18" : "#f0eeeb";
+
+  return <div ref={containerRef} className="w-full h-full" style={{ background: bg }} />;
 }
