@@ -1,0 +1,60 @@
+
+username
+Password
+
+
+
+1. Local Folder
+2 Github Repo  - add readme, make private
+
+Close Claude Code to run the Agent Skills
+3 - SUPABASE - agent skills
+3 - NEON - agent skills
+
+3. Claude Code  
+
+
+Connection string
+This is the core one. It gives you the Postgres URL to put in your app’s env vars, usually DATABASE_URL. Your app, ORM, or server code uses that to connect to Neon.
+
+Neon init
+This is the guided setup command, npx neonctl@latest init. Neon says it can configure the Neon MCP server for compatible tools and set up your local development environment in one go. Good if you want Claude Code or your editor to understand Neon more deeply.
+
+IDE extension
+This is Neon’s editor integration for VS Code/Cursor. It can detect connection strings, browse schemas, run queries, manage branches, and help configure MCP from inside the editor. Useful if you want a GUI in the IDE.
+
+MCP server
+This is the AI-tool bridge. It lets tools like Claude Code interact with Neon in natural language: list projects, create branches, run SQL, and help with schema changes. Neon documents it as intended for development/testing, not production.
+
+And inside each repo, I’d add a small file like PROJECT.md with:
+
+purpose
+users
+entities
+auth needed?
+map needed?
+public or private?
+likely stack
+
+That gives Claude a very clean starting point every time.
+
+
+
+
+
+
+Trawlerwatch:
+uses AISSTREAM , login with github
+aisstream API key: ac0083bc3324249a8bc4572aebaf89f1314abb7a
+
+
+sb_publishable__J-d3fBnRkgXtvOc252srA_hO0cwzzG
+
+
+
+hlbuluotqkbjxojmxmiv.superbase.co
+
+
+
+NEXT_PUBLIC_SUPABASE_URL=https://hlbuluotqkbjxojmxmiv.superbase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable__J-d3fBnRkgXtvOc252srA_hO0cwzzG

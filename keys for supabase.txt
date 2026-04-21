@@ -1,0 +1,19 @@
+
+1. Local Folder
+2 Github Repo  - add readme
+
+3. Claude Code  
+
+
+
+
+sb_publishable__J-d3fBnRkgXtvOc252srA_hO0cwzzG
+
+
+
+hlbuluotqkbjxojmxmiv.superbase.co
+
+
+
+NEXT_PUBLIC_SUPABASE_URL=https://hlbuluotqkbjxojmxmiv.superbase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable__J-d3fBnRkgXtvOc252srA_hO0cwzzG
