@@ -38,7 +38,7 @@ function ControlBtn({
 
 export default function MapControls({ mapTheme, onToggleTheme, showEEZ, onToggleEEZ }: Props) {
   return (
-    <div className="absolute bottom-8 right-4 z-10 flex flex-col gap-2 items-end">
+    <div className="flex flex-row gap-2">
       <ControlBtn
         active={mapTheme === "dark"}
         onClick={onToggleTheme}

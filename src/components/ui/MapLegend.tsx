@@ -12,7 +12,7 @@ export default function MapLegend() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="absolute bottom-8 left-14 z-10">
+    <div className="relative">
 
       {open && (
         <div

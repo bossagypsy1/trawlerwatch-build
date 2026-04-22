@@ -67,16 +67,16 @@ export default function HomePage() {
         <StatsBar vessels={filteredVessels} />
       )}
 
-      {/* Bottom-left legend */}
-      <MapLegend />
-
-      {/* Bottom-right map controls */}
-      <MapControls
-        mapTheme={mapTheme}
-        onToggleTheme={() => setMapTheme((t) => t === "light" ? "dark" : "light")}
-        showEEZ={showEEZ}
-        onToggleEEZ={() => setShowEEZ((v) => !v)}
-      />
+      {/* Bottom-left controls row: legend + map toggles */}
+      <div className="absolute bottom-8 left-14 z-10 flex items-center gap-2">
+        <MapLegend />
+        <MapControls
+          mapTheme={mapTheme}
+          onToggleTheme={() => setMapTheme((t) => t === "light" ? "dark" : "light")}
+          showEEZ={showEEZ}
+          onToggleEEZ={() => setShowEEZ((v) => !v)}
+        />
+      </div>
 
       {/* Initial loading overlay */}
       {loading && (
