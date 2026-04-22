@@ -5,10 +5,12 @@ import dynamic from "next/dynamic";
 import { VesselWithPosition, FilterState, DEFAULT_FILTERS } from "@/types";
 import { filterVessels } from "@/lib/data/vesselService";
 import { useAISStream } from "@/lib/hooks/useAISStream";
-import Sidebar      from "@/components/sidebar/Sidebar";
-import StatsBar     from "@/components/ui/StatsBar";
-import MapLegend    from "@/components/ui/MapLegend";
-import MapControls  from "@/components/ui/MapControls";
+import Sidebar        from "@/components/sidebar/Sidebar";
+import StatsBar       from "@/components/ui/StatsBar";
+import MapLegend      from "@/components/ui/MapLegend";
+import MapControls    from "@/components/ui/MapControls";
+import LocaleSelector from "@/components/ui/LocaleSelector";
+import { DEFAULT_LOCALE, Locale } from "@/lib/locales";
 
 // Leaflet must be loaded client-side only
 const TrawlerMap = dynamic(() => import("@/components/map/TrawlerMap"), {
@@ -36,6 +38,20 @@ export default function HomePage() {
   const [filters,        setFilters]        = useState<FilterState>(DEFAULT_FILTERS);
   const [mapTheme,       setMapTheme]       = useState<"light" | "dark">("light");
   const [showEEZ,        setShowEEZ]        = useState(false);
+  const [locale,         setLocale]         = useState<Locale>(DEFAULT_LOCALE);
+
+  const handleLocaleChange = useCallback(async (next: Locale) => {
+    setLocale(next);
+    try {
+      await fetch("/api/ais-locale", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ localeId: next.id }),
+      });
+    } catch {
+      // backend unreachable — map still pans, vessels clear on next poll
+    }
+  }, []);
 
   const filteredVessels = useMemo(
     () => filterVessels(allVessels, filters),
@@ -59,13 +75,17 @@ export default function HomePage() {
           filters={filters}
           mapTheme={mapTheme}
           showEEZ={showEEZ}
+          locale={locale}
         />
       </div>
 
-      {/* Top-left stats bar */}
-      {!loading && allVessels.length > 0 && (
-        <StatsBar vessels={filteredVessels} />
-      )}
+      {/* Top-left: locale selector + stats bar */}
+      <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+        <LocaleSelector locale={locale} onChange={handleLocaleChange} />
+        {!loading && allVessels.length > 0 && (
+          <StatsBar vessels={filteredVessels} />
+        )}
+      </div>
 
       {/* Bottom-left controls row: legend + map toggles */}
       <div className="absolute bottom-8 left-14 z-10 flex items-center gap-2">

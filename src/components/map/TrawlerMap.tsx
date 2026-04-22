@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, DivIcon, Marker, Polyline, TileLayer } from "leaflet";
 import { VesselWithPosition, FilterState } from "@/types";
 import { vesselTypeColor } from "@/lib/vesselTypes";
+import { Locale } from "@/lib/locales";
 
 interface MapProps {
   vessels:        VesselWithPosition[];
@@ -12,6 +13,7 @@ interface MapProps {
   filters:        FilterState;
   mapTheme:       "light" | "dark";
   showEEZ:        boolean;
+  locale:         Locale;
 }
 
 type LeafletLib = typeof import("leaflet");
@@ -61,6 +63,7 @@ export default function TrawlerMap({
   filters,
   mapTheme,
   showEEZ,
+  locale,
 }: MapProps) {
   const containerRef  = useRef<HTMLDivElement>(null);
   const mapRef        = useRef<LeafletMap | null>(null);
@@ -112,7 +115,14 @@ export default function TrawlerMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── 2. Swap base tile layers when theme changes ───────────────────────────
+  // ── 2. Fly to locale center/zoom when locale changes ─────────────────────
+  useEffect(() => {
+    if (!mapRef.current || !leafletReady) return;
+    mapRef.current.flyTo(locale.center, locale.zoom, { duration: 1.2 });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leafletReady, locale.id]);
+
+  // ── 3. Swap base tile layers when theme changes ───────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
@@ -144,7 +154,7 @@ export default function TrawlerMap({
       .addTo(map);
   }, [leafletReady, mapTheme]);
 
-  // ── 3. Toggle EEZ / international waters WMS overlay ─────────────────────
+  // ── 4. Toggle EEZ / international waters WMS overlay ─────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
@@ -172,7 +182,7 @@ export default function TrawlerMap({
     }
   }, [leafletReady, showEEZ]);
 
-  // ── 4. Draw / update vessel markers ──────────────────────────────────────
+  // ── 5. Draw / update vessel markers ──────────────────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
@@ -206,7 +216,7 @@ export default function TrawlerMap({
     });
   }, [leafletReady, vessels, selectedVessel, onVesselSelect]);
 
-  // ── 5. Draw / update vessel trail ────────────────────────────────────────
+  // ── 6. Draw / update vessel trail ────────────────────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
@@ -242,7 +252,7 @@ export default function TrawlerMap({
     });
   }, [leafletReady, selectedVessel, filters.showTrails]);
 
-  // ── 6. Fly to selected vessel ─────────────────────────────────────────────
+  // ── 7. Fly to selected vessel ─────────────────────────────────────────────
   useEffect(() => {
     if (!mapRef.current || !selectedVessel) return;
     const { latitude, longitude } = selectedVessel.latest_position;

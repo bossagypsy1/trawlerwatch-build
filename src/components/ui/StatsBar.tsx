@@ -31,7 +31,7 @@ export default function StatsBar({ vessels }: Props) {
 
   return (
     <div
-      className="absolute top-3 left-3 z-10 flex items-center gap-1
+      className="flex items-center gap-1
         bg-ocean-900/90 backdrop-blur-sm border border-ocean-700/50
         rounded-lg px-3 py-2 shadow-xl pointer-events-none"
     >

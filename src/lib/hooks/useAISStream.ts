@@ -144,7 +144,8 @@ export interface AISStreamState {
 }
 
 export function useAISStream(): AISStreamState {
-  const vesselMap = useRef(new Map<string, VesselWithPosition>());
+  const vesselMap      = useRef(new Map<string, VesselWithPosition>());
+  const lastLocaleId   = useRef<string | null>(null);
 
   const [state, setState] = useState<AISStreamState>({
     vessels:       [],
@@ -158,8 +159,14 @@ export function useAISStream(): AISStreamState {
       const res = await fetch(STATUS_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data: { connected: boolean; totalReceived: number; messages: AISUpdate[] } =
+      const data: { connected: boolean; totalReceived: number; localeId?: string; messages: AISUpdate[] } =
         await res.json();
+
+      // If the backend switched locale, clear stale vessels from the old region
+      if (data.localeId && data.localeId !== lastLocaleId.current) {
+        lastLocaleId.current = data.localeId;
+        vesselMap.current.clear();
+      }
 
       for (const u of data.messages) {
         upsert(vesselMap.current, u);
