@@ -74,6 +74,8 @@ export default function TrawlerMap({
   const labelTileRef  = useRef<TileLayer | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const eezLayerRef   = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const bboxRectsRef  = useRef<any[]>([]);
 
   const [leafletReady, setLeafletReady] = useState(false);
 
@@ -182,7 +184,38 @@ export default function TrawlerMap({
     }
   }, [leafletReady, showEEZ]);
 
-  // ── 5. Draw / update vessel markers ──────────────────────────────────────
+  // ── 5. Draw bounding box rectangle(s) for current locale ─────────────────
+  useEffect(() => {
+    const map     = mapRef.current;
+    const leaflet = leafletRef.current;
+    if (!map || !leaflet || !leafletReady) return;
+
+    // Remove old rectangles
+    bboxRectsRef.current.forEach((r) => r.remove());
+    bboxRectsRef.current = [];
+
+    // Draw one rectangle per bounding box
+    locale.boundingBoxes.forEach(([[swLat, swLon], [neLat, neLon]]) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rect = (leaflet as any).rectangle(
+        [[swLat, swLon], [neLat, neLon]],
+        {
+          color:       "#58a6ff",
+          weight:      1.5,
+          opacity:     0.55,
+          fill:        true,
+          fillColor:   "#58a6ff",
+          fillOpacity: 0.04,
+          dashArray:   "6 5",
+          interactive: false,
+        },
+      ).addTo(map);
+      bboxRectsRef.current.push(rect);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leafletReady, locale.id]);
+
+  // ── 6. Draw / update vessel markers ─────────────────────────────────────
   useEffect(() => {
     const map     = mapRef.current;
     const leaflet = leafletRef.current;
