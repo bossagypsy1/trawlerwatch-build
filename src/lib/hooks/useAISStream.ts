@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { VesselWithPosition, NavStatus, Position } from "@/types";
 
-const STATUS_URL = "/api/ais-status";
-const POLL_INTERVAL_MS = 2_000;
-const MAX_TRAIL        = 20;
+// Reads current vessel state from the backend, which sources it from Neon.
+// No vessel accumulation happens in the browser — the backend is the sole
+// source of truth and the hook simply replaces state on each poll.
+const VESSELS_URL    = "/api/vessels";
+const POLL_INTERVAL_MS = 5_000;
 
-// ── AIS wire shape ─────────────────────────────────────────────────────────────
+// ── AIS wire shape (returned by aisstream /vessels) ────────────────────────
 
 interface AISUpdate {
   mmsi:        string;
@@ -20,7 +22,6 @@ interface AISUpdate {
   heading:     number | null;
   navStatus:   string | null;
   timestamp:   string;
-  // From ShipStaticData
   callsign:    string | null;
   imo:         string | null;
   vesselType:  string | null;
@@ -30,19 +31,18 @@ interface AISUpdate {
   destination: string | null;
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Normalise the Go-style timestamp from AISStream into a string that
- * JavaScript's Date constructor can parse reliably.
+ * Normalise Go-style AISStream timestamp → ISO string JS Date can parse.
  * Input:  "2026-04-14 22:27:22.223962632 +0000 UTC"
  * Output: "2026-04-14T22:27:22.223Z"
  */
 function normaliseTimestamp(ts: string): string {
   return ts
-    .replace(" ", "T")                // date/time separator
-    .replace(/(\.\d{3})\d*/, "$1")    // truncate sub-ms precision
-    .replace(/\s+\+0000\s+UTC$/, "Z") // timezone suffix
+    .replace(" ", "T")
+    .replace(/(\.\d{3})\d*/, "$1")
+    .replace(/\s+\+0000\s+UTC$/, "Z")
     .replace(/\s+\+0000$/, "Z");
 }
 
@@ -61,80 +61,50 @@ function mapNavStatus(raw: string | null): NavStatus {
   }
 }
 
-function makePosition(u: AISUpdate): Position {
-  return {
-    id:                 `${u.mmsi}_${u.timestamp}`,
+/**
+ * Pure transform: one AISUpdate → VesselWithPosition.
+ * Returns null for records without a position fix (static-only rows that
+ * somehow lack lat/lon — shouldn't happen given the Neon query filters them,
+ * but kept as a safety guard).
+ */
+function transformVessel(u: AISUpdate): VesselWithPosition | null {
+  if (u.latitude == null || u.longitude == null) return null;
+
+  const ts  = normaliseTimestamp(u.timestamp);
+  const pos: Position = {
+    id:                 `${u.mmsi}_${ts}`,
     vessel_id:          u.mmsi,
     mmsi:               u.mmsi,
-    latitude:           u.latitude!,
-    longitude:          u.longitude!,
+    latitude:           u.latitude,
+    longitude:          u.longitude,
     speed_over_ground:  u.speed   ?? 0,
     course_over_ground: u.course  ?? 0,
     heading:            u.heading ?? 511,
     nav_status:         mapNavStatus(u.navStatus),
-    destination:        null,
-    draught:            null,
-    timestamp:          normaliseTimestamp(u.timestamp),
+    destination:        u.destination ?? null,
+    draught:            u.draught     ?? null,
+    timestamp:          ts,
+  };
+
+  return {
+    id:            u.mmsi,
+    mmsi:          u.mmsi,
+    name:          (u.shipName && u.shipName !== "—") ? u.shipName : "—",
+    flag:          "",
+    flag_code:     "",
+    vessel_type:   u.vesselType  ?? null,
+    callsign:      u.callsign    ?? null,
+    imo:           u.imo         ?? null,
+    length_m:      u.lengthM     ?? null,
+    width_m:       u.widthM      ?? null,
+    gross_tonnage: null,
+    created_at:    ts,
+    latest_position: pos,
+    trail:         [],   // track history not yet stored; will be re-enabled when added
   };
 }
 
-function upsert(map: Map<string, VesselWithPosition>, u: AISUpdate): void {
-  const prev = map.get(u.mmsi);
-
-  // ShipStaticData has no position — merge metadata into existing vessel only
-  if (u.latitude == null || u.longitude == null) {
-    if (prev) {
-      map.set(u.mmsi, {
-        ...prev,
-        name:        (u.shipName && u.shipName !== "—") ? u.shipName : prev.name,
-        vessel_type: u.vesselType ?? prev.vessel_type,
-        callsign:    u.callsign   ?? prev.callsign,
-        imo:         u.imo        ?? prev.imo,
-        length_m:    u.lengthM    ?? prev.length_m,
-        width_m:     u.widthM     ?? prev.width_m,
-        latest_position: {
-          ...prev.latest_position,
-          destination: u.destination ?? prev.latest_position.destination,
-          draught:     u.draught     ?? prev.latest_position.draught,
-        },
-      });
-    }
-    return;
-  }
-
-  const newPos = makePosition(u);
-  // Only extend trail if the vessel has actually moved (avoids duplicate entries
-  // now that /status returns one merged record per MMSI on every poll)
-  const positionChanged = !prev
-    || prev.latest_position.latitude  !== newPos.latitude
-    || prev.latest_position.longitude !== newPos.longitude;
-  const trail: Position[] = (prev && positionChanged)
-    ? [prev.latest_position, ...(prev.trail ?? [])].slice(0, MAX_TRAIL)
-    : (prev?.trail ?? []);
-
-  map.set(u.mmsi, {
-    id:            u.mmsi,
-    mmsi:          u.mmsi,
-    name:          (u.shipName && u.shipName !== "—") ? u.shipName : (prev?.name ?? "—"),
-    flag:          prev?.flag          ?? "",
-    flag_code:     prev?.flag_code     ?? "",
-    vessel_type:   u.vesselType  ?? prev?.vessel_type   ?? null,
-    callsign:      u.callsign    ?? prev?.callsign      ?? null,
-    imo:           u.imo         ?? prev?.imo            ?? null,
-    length_m:      u.lengthM     ?? prev?.length_m      ?? null,
-    width_m:       u.widthM      ?? prev?.width_m       ?? null,
-    gross_tonnage: prev?.gross_tonnage ?? null,
-    created_at:    prev?.created_at    ?? new Date().toISOString(),
-    latest_position: {
-      ...newPos,
-      destination: u.destination ?? prev?.latest_position.destination ?? null,
-      draught:     u.draught     ?? prev?.latest_position.draught     ?? null,
-    },
-    trail,
-  });
-}
-
-// ── Public hook ────────────────────────────────────────────────────────────────
+// ── Public hook ────────────────────────────────────────────────────────────
 
 export interface AISStreamState {
   vessels:       VesselWithPosition[];
@@ -144,8 +114,7 @@ export interface AISStreamState {
 }
 
 export function useAISStream(): AISStreamState {
-  const vesselMap      = useRef(new Map<string, VesselWithPosition>());
-  const lastLocaleId   = useRef<string | null>(null);
+  const lastLocaleId = useRef<string | null>(null);
 
   const [state, setState] = useState<AISStreamState>({
     vessels:       [],
@@ -156,26 +125,30 @@ export function useAISStream(): AISStreamState {
 
   const poll = useCallback(async () => {
     try {
-      const res = await fetch(STATUS_URL);
+      const res = await fetch(VESSELS_URL);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const data: { connected: boolean; totalReceived: number; localeId?: string; messages: AISUpdate[] } =
-        await res.json();
+      const data: {
+        connected:     boolean;
+        totalReceived: number;
+        localeId?:     string;
+        messages:      AISUpdate[];
+      } = await res.json();
 
-      // If the backend switched locale, clear stale vessels from the old region
+      // Track locale changes for parent components that react to them
       if (data.localeId && data.localeId !== lastLocaleId.current) {
         lastLocaleId.current = data.localeId;
-        vesselMap.current.clear();
       }
 
-      for (const u of data.messages) {
-        upsert(vesselMap.current, u);
-      }
+      // Backend already holds fully merged state per MMSI — just transform and replace.
+      const vessels = data.messages
+        .map(transformVessel)
+        .filter((v): v is VesselWithPosition => v !== null);
 
       setState({
-        vessels:       Array.from(vesselMap.current.values()),
+        vessels,
         connected:     data.connected,
-        totalReceived: data.totalReceived,
+        totalReceived: data.totalReceived ?? 0,
         loading:       false,
       });
     } catch {
@@ -184,7 +157,7 @@ export function useAISStream(): AISStreamState {
   }, []);
 
   useEffect(() => {
-    poll(); // immediate first fetch
+    poll();
     const id = setInterval(poll, POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [poll]);
