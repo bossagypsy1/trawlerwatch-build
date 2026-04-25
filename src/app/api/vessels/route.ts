@@ -14,8 +14,9 @@ export async function GET() {
     );
   }
 
-  // AIS_INTERNAL_URL points at /status; replace the path with /vessels.
-  const url = base.replace(/\/status$/, "") + "/vessels";
+  // Derive /vessels from whatever AIS_INTERNAL_URL contains (may include /status path).
+  const { protocol, host } = new URL(base);
+  const url = `${protocol}//${host}/vessels`;
 
   try {
     const response = await fetch(url, { cache: "no-store" });
