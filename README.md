@@ -31,7 +31,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3030](http://localhost:3030).
 
 The app runs with 40 realistic sample vessels out of the box —
 no Supabase account needed until you want live data.
