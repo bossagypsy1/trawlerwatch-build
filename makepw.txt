@@ -1,0 +1,184 @@
+Implement **Basic Baked Users Auth** in the smallest possible way, fitting the existing Claude-generated app structure.
+
+Do **not** redesign the app. Do **not** change the dashboard layout, ingestion logic, map/feed logic, existing generator structure, or database schema except adding the minimal `users` table needed for auth.
+
+Goal:
+
+* Protect the main dashboard with login.
+* Use **NextAuth CredentialsProvider**.
+* Use a **baked fallback secret** like cellar_watch so Vercel works without manually adding `NEXTAUTH_SECRET`.
+* Use only a `users` table.
+* Add a simple admin page to manage users.
+* Add a button/link on the main dashboard to open the user admin page.
+
+Auth name:
+
+```text
+Basic Baked Users Auth
+```
+
+## Database
+
+Add only this table:
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT,
+  password_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+No organisations.
+No roles.
+No permissions system.
+No org/feed-type mapping.
+No complex admin dashboard.
+
+For now, **any logged-in user can access the dashboard and the user admin page**.
+
+## NextAuth
+
+Use CredentialsProvider with `bcryptjs`.
+
+Use JWT sessions.
+
+In the NextAuth config, use this baked fallback secret pattern:
+
+```ts
+// TODO before commercial/production use:
+// Set NEXTAUTH_SECRET in Vercel and stop relying on this baked fallback secret.
+secret: process.env.NEXTAUTH_SECRET ?? 'PROJECT_NAME-baked-auth-secret-change-before-production',
+```
+
+Replace `PROJECT_NAME` with the actual app/project name.
+
+## Setup route
+
+Add a setup route:
+
+```text
+/api/admin/setup
+```
+
+It should:
+
+1. Create the `users` table if it does not exist.
+2. If no users exist, create one initial user in the database:
+
+   * email: `admin@local`
+   * password: `Admin@2024!`
+3. Hash the password with `bcryptjs`
+
+4.  write that username and password in the output of this agent. 
+
+
+
+## Login page
+
+Add:
+
+```text
+/login
+```
+
+Use the current app’s visual style. Keep it simple.
+
+## Middleware protection
+
+Protect the dashboard and all normal app routes.
+
+Allow only:
+
+```text
+/login
+/api/auth/*
+/api/admin/setup
+/_next/*
+/favicon.ico
+```
+
+Everything else should require a logged-in session.
+
+Do not break existing API routes unless they are meant to be private dashboard routes.
+
+## User admin page
+
+Add a simple user management page:
+
+```text
+/admin/users
+```
+
+It should allow logged-in users to:
+
+1. View users.
+2. Add a user.
+3. Edit a user’s name/email.
+4. Reset a user’s password.
+5. Delete a user.
+
+Keep it minimal and consistent with the existing dashboard style.
+
+## Main dashboard button
+
+Add a small button or link on the main dashboard UI:
+
+```text
+Manage Users
+```
+
+It should link to:
+
+```text
+/admin/users
+```
+
+There needs to be a logout button.
+
+Do not make this a large redesign. Put it somewhere natural in the existing dashboard header/sidebar/top controls.
+
+## Server actions or API routes
+
+Use whatever pattern the current Claude-generated app already uses.
+
+If the app already uses server actions, use server actions.
+
+If it uses API routes, use API routes.
+
+Do not introduce a new architectural style unless necessary.
+
+## Required env vars
+
+Use the existing:
+
+```env
+DATABASE_URL=<existing database url>
+```
+
+Optional for now:
+
+```env
+NEXTAUTH_SECRET=<optional because baked fallback exists>
+NEXTAUTH_URL=<optional unless needed by deployment>
+```
+
+## Important constraints
+
+* Minimal change.
+* Fit the existing generated structure.
+* Do not refactor unrelated code.
+* Do not add organisation-level auth yet.
+* Do not add feed-type permissions yet.
+* Do not add locale permissions yet.
+* Do not change ingestion behavior.
+* Do not change the main dashboard except adding the `Manage Users` button/link.
+
+
+Auth redirects must be environment-safe: after login/logout, redirect only to same-site relative paths like `/`, or construct URLs from `req.url`; never use `localhost`, `127.0.0.1`, `:3000`, fixed ports, or a hardcoded production domain, because the same code must work on local dev, preview deployments, and the live Vercel server.
+
+
+
+update agents.md and claude.md , include reminder to use full auth in future

@@ -10,6 +10,7 @@ import StatsBar       from "@/components/ui/StatsBar";
 import MapLegend      from "@/components/ui/MapLegend";
 import MapControls    from "@/components/ui/MapControls";
 import LocaleSelector from "@/components/ui/LocaleSelector";
+import AuthControls   from "@/components/auth/AuthControls";
 import { DEFAULT_LOCALE, Locale } from "@/lib/locales";
 
 // Leaflet must be loaded client-side only
@@ -82,6 +83,7 @@ export default function HomePage() {
       {/* Top-left: locale selector + stats bar */}
       <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
         <LocaleSelector locale={locale} onChange={handleLocaleChange} />
+        <AuthControls />
         {!loading && allVessels.length > 0 && (
           <StatsBar vessels={filteredVessels} />
         )}

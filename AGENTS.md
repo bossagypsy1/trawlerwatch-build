@@ -21,6 +21,8 @@ Before making changes:
 - The dashboard runs locally on `http://localhost:3030` via `npm run dev`. If login or Supabase Auth sends the browser to `localhost:3000` after authentication, treat that as a misconfigured redirect and update the auth redirect/Site URL to `http://localhost:3030`.
 - The ingestion server runs locally on `http://localhost:5000` via `npm run dev` in `..\aisstream`. The dashboard reaches it through `AIS_INTERNAL_URL`, usually pointing at the ingestion server `/status` endpoint; dashboard API routes derive other ingestion endpoints from that base URL.
 - When dashboard behavior depends on live vessels, AIS status, locale changes, persistence, or stream health, inspect `..\aisstream` as well as this repo before making changes.
+- Auth is currently Basic Baked Users Auth: NextAuth CredentialsProvider, JWT sessions, a baked fallback secret, and a single `users` table. Keep it minimal unless explicitly asked to implement full production auth.
+- Before commercial/production use, replace Basic Baked Users Auth with full auth: set `NEXTAUTH_SECRET`, remove reliance on baked fallback secrets, and add proper roles/permissions/auditing as needed.
 
 ## System structure
 
@@ -33,6 +35,7 @@ Before making changes:
   - `src/lib/locales.ts` defines dashboard locales, centers, zooms, and bounding boxes. Keep this aligned with `..\aisstream\src\locales.ts`.
   - `src/components/map/TrawlerMap.tsx` is the Leaflet map. Leaflet must stay client-side only via dynamic import / browser-only effects.
   - `src/components/sidebar/*` and `src/components/ui/*` render filters, vessel details, stats, legend, map controls, and locale selection.
+  - `src/app/login`, `src/app/admin/users`, `src/app/api/auth/[...nextauth]`, `src/app/api/admin/setup`, and `src/app/api/admin/users` implement Basic Baked Users Auth.
   - `SUPABASE_SETUP.sql` is the older Supabase schema path. Current live AIS reads are primarily proxied from `aisstream`.
 - Ingestion repo (`..\aisstream`):
   - `src/server.ts` connects to AISStream over WebSocket, parses position and static AIS messages, merges vessel state by MMSI, broadcasts browser WebSocket updates, and exposes HTTP endpoints.
@@ -50,6 +53,7 @@ Before making changes:
 - Node HTTP/WebSocket services: ingestion uses `http`, `ws`, and AISStream upstream reconnect logic; test endpoint changes against `/status`, `/vessels`, `/locale`, `/locales`, and `/debug`.
 - Postgres/Neon persistence: ingestion writes merged vessel state in bulk batches, throttles position writes, loads recent state once on startup for recovery, and cleans up stale data after 24 hours. Dashboard `/vessels` reads should be served from `aisstream` memory, not Neon.
 - Environment configuration: dashboard uses `AIS_INTERNAL_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; ingestion uses `DATABASE_URL` and AISStream connection settings. Do not move secrets into client-side dashboard code.
+- Dashboard auth requires server-side `DATABASE_URL` for the `users` table. `NEXTAUTH_SECRET` is optional for now because there is a baked fallback, but it must be set before production use.
 
 ## Change workflow
 
