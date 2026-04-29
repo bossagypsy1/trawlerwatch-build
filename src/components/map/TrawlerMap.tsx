@@ -1,10 +1,30 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Map as LeafletMap, DivIcon, Marker, Polyline, TileLayer } from "leaflet";
+import type { Map as LeafletMap, DivIcon, Marker, Polyline, TileLayer, GeoJSON as LeafletGeoJSON } from "leaflet";
 import { VesselWithPosition, FilterState } from "@/types";
 import { vesselTypeColor } from "@/lib/vesselTypes";
 import { Locale } from "@/lib/locales";
+
+interface MpaFeatureCollection {
+  type: "FeatureCollection";
+  localeId: string;
+  features: Array<{
+    type: "Feature";
+    id: string;
+    geometry: {
+      type: string;
+      coordinates: unknown;
+    };
+    properties: {
+      name: string;
+      designationType: string;
+      source: string;
+      status: string | null;
+      metadata: Record<string, unknown>;
+    };
+  }>;
+}
 
 interface MapProps {
   vessels:        VesselWithPosition[];
@@ -13,7 +33,9 @@ interface MapProps {
   filters:        FilterState;
   mapTheme:       "light" | "dark";
   showEEZ:        boolean;
+  showMPA:        boolean;
   locale:         Locale;
+  mpaLayer:       MpaFeatureCollection | null;
 }
 
 type LeafletLib = typeof import("leaflet");
@@ -63,7 +85,9 @@ export default function TrawlerMap({
   filters,
   mapTheme,
   showEEZ,
+  showMPA,
   locale,
+  mpaLayer,
 }: MapProps) {
   const containerRef  = useRef<HTMLDivElement>(null);
   const mapRef        = useRef<LeafletMap | null>(null);
@@ -74,6 +98,7 @@ export default function TrawlerMap({
   const labelTileRef  = useRef<TileLayer | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const eezLayerRef   = useRef<any>(null);
+  const mpaLayerRef   = useRef<LeafletGeoJSON | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bboxRectsRef  = useRef<any[]>([]);
 
@@ -295,6 +320,30 @@ export default function TrawlerMap({
       { duration: 0.8 },
     );
   }, [selectedVessel]);
+
+  useEffect(() => {
+    const map     = mapRef.current;
+    const leaflet = leafletRef.current;
+    if (!map || !leaflet || !leafletReady) return;
+
+    if (mpaLayerRef.current) {
+      mpaLayerRef.current.remove();
+      mpaLayerRef.current = null;
+    }
+
+    if (showMPA && mpaLayer?.features?.length) {
+      mpaLayerRef.current = leaflet.geoJSON(mpaLayer as any, {
+        interactive: false,
+        style: {
+          color:       "#2dd4bf",
+          weight:      1.25,
+          opacity:     0.9,
+          fillColor:   "#14b8a6",
+          fillOpacity: 0.08,
+        },
+      }).addTo(map) as LeafletGeoJSON;
+    }
+  }, [leafletReady, showMPA, mpaLayer]);
 
   // Container background matches the theme immediately (before tiles load)
   const bg = mapTheme === "dark" ? "#020b18" : "#f0eeeb";

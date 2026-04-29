@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { VesselWithPosition, FilterState, DEFAULT_FILTERS } from "@/types";
 import { filterVessels } from "@/lib/data/vesselService";
@@ -12,6 +12,26 @@ import MapControls    from "@/components/ui/MapControls";
 import LocaleSelector from "@/components/ui/LocaleSelector";
 import AuthControls   from "@/components/auth/AuthControls";
 import { DEFAULT_LOCALE, Locale } from "@/lib/locales";
+
+interface MpaFeatureCollection {
+  type: "FeatureCollection";
+  localeId: string;
+  features: Array<{
+    type: "Feature";
+    id: string;
+    geometry: {
+      type: string;
+      coordinates: unknown;
+    };
+    properties: {
+      name: string;
+      designationType: string;
+      source: string;
+      status: string | null;
+      metadata: Record<string, unknown>;
+    };
+  }>;
+}
 
 const TrawlerMap = dynamic(() => import("@/components/map/TrawlerMap"), {
   ssr: false,
@@ -38,7 +58,9 @@ export default function DashboardClient() {
   const [filters,        setFilters]        = useState<FilterState>(DEFAULT_FILTERS);
   const [mapTheme,       setMapTheme]       = useState<"light" | "dark">("light");
   const [showEEZ,        setShowEEZ]        = useState(false);
+  const [showMPA,        setShowMPA]        = useState(false);
   const [locale,         setLocale]         = useState<Locale>(DEFAULT_LOCALE);
+  const [mpaLayer,       setMpaLayer]       = useState<MpaFeatureCollection | null>(null);
 
   const handleLocaleChange = useCallback(async (next: Locale) => {
     setLocale(next);
@@ -58,6 +80,33 @@ export default function DashboardClient() {
     [allVessels, filters],
   );
 
+  useEffect(() => {
+    if (!showMPA) {
+      setMpaLayer(null);
+      return;
+    }
+
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const response = await fetch(`/api/mpas?localeId=${encodeURIComponent(locale.id)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const data = await response.json() as MpaFeatureCollection;
+        setMpaLayer(data);
+      } catch {
+        if (!controller.signal.aborted) {
+          setMpaLayer(null);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [locale.id, showMPA]);
+
   const handleVesselSelect = useCallback(
     (vessel: VesselWithPosition | null) => setSelectedVessel(vessel),
     [],
@@ -73,7 +122,9 @@ export default function DashboardClient() {
           filters={filters}
           mapTheme={mapTheme}
           showEEZ={showEEZ}
+          showMPA={showMPA}
           locale={locale}
+          mpaLayer={mpaLayer}
         />
       </div>
 
@@ -92,6 +143,8 @@ export default function DashboardClient() {
           onToggleTheme={() => setMapTheme((t) => t === "light" ? "dark" : "light")}
           showEEZ={showEEZ}
           onToggleEEZ={() => setShowEEZ((v) => !v)}
+          showMPA={showMPA}
+          onToggleMPA={() => setShowMPA((v) => !v)}
         />
       </div>
 

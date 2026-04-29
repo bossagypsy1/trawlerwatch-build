@@ -1,12 +1,14 @@
 "use client";
 
-import { Sun, Moon, Globe } from "lucide-react";
+import { Sun, Moon, Globe, Layers3 } from "lucide-react";
 
 interface Props {
   mapTheme:       "light" | "dark";
   onToggleTheme:  () => void;
   showEEZ:        boolean;
   onToggleEEZ:    () => void;
+  showMPA:        boolean;
+  onToggleMPA:    () => void;
 }
 
 function ControlBtn({
@@ -36,7 +38,7 @@ function ControlBtn({
   );
 }
 
-export default function MapControls({ mapTheme, onToggleTheme, showEEZ, onToggleEEZ }: Props) {
+export default function MapControls({ mapTheme, onToggleTheme, showEEZ, onToggleEEZ, showMPA, onToggleMPA }: Props) {
   return (
     <div className="flex flex-row gap-2">
       <ControlBtn
@@ -55,6 +57,15 @@ export default function MapControls({ mapTheme, onToggleTheme, showEEZ, onToggle
       >
         <Globe size={11} />
         EEZ limits
+      </ControlBtn>
+
+      <ControlBtn
+        active={showMPA}
+        onClick={onToggleMPA}
+        title={showMPA ? "Hide UK MPA boundaries" : "Show UK MPA boundaries"}
+      >
+        <Layers3 size={11} />
+        MPA layer
       </ControlBtn>
     </div>
   );
